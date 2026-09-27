@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>اسکنر رشد نوبیتکس</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#0b1220;color:#e8eef7}
+header{background:linear-gradient(135deg,#101b31,#172a46);padding:20px;text-align:center;border-bottom:1px solid #263956}
+h1{margin:0 0 8px;font-size:23px}
+.sub{color:#9fb0c7;font-size:13px}
+.wrap{max-width:1100px;margin:auto;padding:16px}
+.controls{background:#111c2e;border:1px solid #263956;border-radius:14px;padding:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button,select,input{font-family:inherit;border-radius:9px;border:1px solid #334966;background:#0d1727;color:#fff;padding:10px 12px}
+button{cursor:pointer;background:#1769aa;border-color:#287fbd}
+button:hover{background:#2182ce}
+input{width:90px}
+.status{margin-top:12px;color:#aebed2;font-size:13px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.card{background:#111c2e;border:1px solid #263956;border-radius:12px;padding:13px}
+.card b{display:block;font-size:20px;margin-top:5px}
+.tablebox{overflow:auto;background:#111c2e;border:1px solid #263956;border-radius:14px}
+table{width:100%;border-collapse:collapse;min-width:700px}
+th,td{padding:12px 9px;border-bottom:1px solid #23344c;text-align:center}
+th{background:#17263d;color:#b9c9dc;font-size:13px}
+td{font-size:14px}
+.symbol{font-weight:bold;color:#fff}
+.up{color:#34d399;font-weight:bold}
+.down{color:#f87171}
+.badge{display:inline-block;padding:4px 8px;border-radius:20px;background:#123e31;color:#4ade80;font-size:12px}
+.warn{background:#402f12;color:#fbbf24}
+.error{background:#431b23;color:#fb7185;padding:12px;border-radius:10px;margin-top:12px;line-height:1.8}
+.info{background:#12263a;color:#9fd3ff;padding:12px;border-radius:10px;margin-top:12px;line-height:1.8}
+.small{font-size:11px;color:#8093aa}
+@media(max-width:700px){
+ .cards{grid-template-columns:1fr}
+ h1{font-size:19px}
+ .controls>*{width:100%}
+ input,select,button{width:100%}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📈 اسکنر رشد ارزهای نوبیتکس</h1>
+  <div class="sub">شناسایی ارزهایی که در کندل ۱ ساعته یا ۴ ساعته بیش از آستانه تعیین‌شده رشد کرده‌اند</div>
+</header>
+
+<div class="wrap">
+
+  <div class="controls">
+    <label>بازار:
+      <select id="market">
+        <option value="IRT">ریالی (IRT)</option>
+        <option value="USDT">تتری (USDT)</option>
+      </select>
+    </label>
+
+    <label>آستانه رشد:
+      <input id="threshold" type="number" value="5" min="0.1" step="0.1"> %
+    </label>
+
+    <label>نوع کندل:
+      <select id="candleMode">
+        <option value="closed">کندل بسته‌شده</option>
+        <option value="current">کندل جاری</option>
+      </select>
+    </label>
+
+    <button id="scanBtn">🔎 اسکن بازار</button>
+    <button id="autoBtn">▶ شروع بروزرسانی خودکار</button>
+  </div>
+
+  <div id="status" class="status">آماده اسکن...</div>
+
+  <div class="cards">
+    <div class="card">تعداد بازارهای بررسی‌شده<b id="total">۰</b></div>
+    <div class="card">رشد بالای آستانه در ۱ ساعت<b id="count1">۰</b></div>
+    <div class="card">رشد بالای آستانه در ۴ ساعت<b id="count4">۰</b></div>
+  </div>
+
+  <div id="message"></div>
+
+  <div class="tablebox">
+    <table>
+      <thead>
+        <tr>
+          <th>ردیف</th>
+          <th>ارز</th>
+          <th>قیمت فعلی</th>
+          <th>رشد ۱ ساعت</th>
+          <th>رشد ۴ ساعت</th>
+          <th>وضعیت</th>
+          <th>آخرین بروزرسانی</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="7">برای شروع روی «اسکن بازار» بزنید.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info">
+    <b>روش محاسبه:</b> درصد رشد هر کندل از فرمول
+    <b>(قیمت بسته‌شدن − قیمت بازشدن) ÷ قیمت بازشدن × 100</b>
+    محاسبه می‌شود. در حالت «کندل بسته‌شده»، آخرین کندل کامل استفاده می‌شود.
+    <br><br>
+    <b>نکته:</b> این صفحه فقط داده عمومی بازار نوبیتکس را می‌خواند و به API Key یا اطلاعات حساب شما نیاز ندارد.
+  </div>
+
+</div>
+
+<script>
+const API = "https://api.nobitex.ir";
+let autoTimer = null;
+let scanning = false;
+
+const $ = id => document.getElementById(id);
+
+function faNum(n, digits=2){
+  if(n === null || n === undefined || Number.isNaN(n)) return "—";
+  return Number(n).toLocaleString("fa-IR",{maximumFractionDigits:digits});
+}
+
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+async function getJSON(url){
+  const res = await fetch(url, {cache:"no-store"});
+  if(!res.ok) throw new Error("HTTP " + res.status);
+  return await res.json();
+}
+
+// دریافت تمام بازارهای یک ارز مقصد
+async function getMarkets(marketType){
+  if(marketType === "IRT"){
+    const data = await getJSON(API + "/market/stats?dstCurrency=rls");
+    return Object.keys(data.stats || {})
+      .filter(k => k.endsWith("-rls"))
+      .map(k => k.split("-")[0].toUpperCase() + "IRT");
+  }else{
+    const data = await getJSON(API + "/market/stats?dstCurrency=usdt");
+    return Object.keys(data.stats || {})
+      .filter(k => k.endsWith("-usdt"))
+      .map(k => k.split("-")[0].toUpperCase() + "USDT");
+  }
+}
+
+// دریافت آخرین کندل‌ها
+async function getCandles(symbol,resolution){
+  const now = Math.floor(Date.now()/1000);
+  // کمی به عقب‌تر می‌رویم تا کندل بسته‌شده قطعی داشته باشیم
+  const from = now - resolution * 60 * 8;
+  const url = API + "/market/udf/history"
+    + "?symbol=" + encodeURIComponent(symbol)
+    + "&resolution=" + resolution
+    + "&from=" + from
+    + "&to=" + now;
+
+  return await getJSON(url);
+}
+
+function candleGrowth(data, mode){
+  if(!data || data.s !== "ok" || !data.o || !data.c || data.o.length < 1)
+    return null;
+
+  let i = data.o.length - 1;
+
+  // آخرین کندل در حالت بسته‌شده حذف می‌شود؛
+  // چون ممکن است هنوز در حال شکل‌گیری باشد.
+  if(mode === "closed" && data.o.length >= 2) i--;
+
+  const open = Number(data.o[i]);
+  const close = Number(data.c[i]);
+
+  if(!open || !close) return null;
+
+  return {
+    growth: ((close-open)/open)*100,
+    open,
+    close,
+    time: Number(data.t[i])*1000
+  };
+}
+
+function sortRows(rows){
+  rows.sort((a,b)=>{
+    const aMax = Math.max(a.g1 ?? -9999,a.g4 ?? -9999);
+    const bMax = Math.max(b.g1 ?? -9999,b.g4 ?? -9999);
+    return bMax-aMax;
+  });
+}
+
+async function scan(){
+  if(scanning) return;
+  scanning = true;
+
+  const threshold = Number($("threshold").value) || 5;
+  const market = $("market").value;
+  const mode = $("candleMode").value;
+
+  $("scanBtn").disabled = true;
+  $("message").innerHTML = "";
+  $("tbody").innerHTML = "<tr><td colspan='7'>در حال دریافت اطلاعات بازار...</td></tr>";
+  $("status").textContent = "در حال دریافت فهرست بازارها...";
+
+  try{
+    const markets = await getMarkets(market);
+    $("total").textContent = faNum(markets.length);
+
+    const rows = [];
+    let done = 0;
+
+    /*
+      برای جلوگیری از فشار زیاد به API، درخواست‌ها به صورت دسته‌ای
+      و با مکث کوتاه ارسال می‌شوند.
+    */
+    const batchSize = 6;
+
+    for(let i=0;i<markets.length;i+=batchSize){
+      const batch = markets.slice(i,i+batchSize);
+
+      const results = await Promise.all(batch.map(async symbol=>{
+        try{
+          const [d1,d4] = await Promise.all([
+            getCandles(symbol,"60"),
+            getCandles(symbol,"240")
+          ]);
+
+          const c1 = candleGrowth(d1,mode);
+          const c4 = candleGrowth(d4,mode);
+
+          return {
+            symbol,
+            g1: c1 ? c1.growth : null,
+            g4: c4 ? c4.growth : null,
+            price: c1 ? c1.close : (c4 ? c4.close : null),
+            time: c1 ? c1.time : Date.now()
+          };
+        }catch(e){
+          return {symbol,g1:null,g4:null,price:null,time:Date.now(),error:true};
+        }
+      }));
+
+      rows.push(...results);
+      done += batch.length;
+      $("status").textContent = `در حال بررسی ${faNum(done)} از ${faNum(markets.length)} بازار...`;
+
+      // مکث کوتاه برای کاهش احتمال محدودیت درخواست
+      await sleep(250);
+    }
+
+    sortRows(rows);
+
+    const hit1 = rows.filter(x => x.g1 !== null && x.g1 >= threshold).length;
+    const hit4 = rows.filter(x => x.g4 !== null && x.g4 >= threshold).length;
+
+    $("count1").textContent = faNum(hit1);
+    $("count4").textContent = faNum(hit4);
+
+    // فقط ارزهایی که حداقل در یکی از دو تایم‌فریم از آستانه عبور کرده‌اند
+    const filtered = rows.filter(x =>
+      (x.g1 !== null && x.g1 >= threshold) ||
+      (x.g4 !== null && x.g4 >= threshold)
+    );
+
+    render(filtered, threshold);
+
+    const now = new Date().toLocaleTimeString("fa-IR");
+    $("status").textContent =
+      `اسکن کامل شد: ${faNum(filtered.length)} ارز از آستانه ${faNum(threshold)}٪ عبور کرده‌اند — ${now}`;
+
+  }catch(err){
+    console.error(err);
+    $("message").innerHTML =
+      `<div class="error">
+       خطا در دریافت اطلاعات از نوبیتکس.<br>
+       ممکن است API موقتاً در دسترس نباشد یا مرورگر دسترسی Cross-Origin را محدود کرده باشد.
+       <br>جزئیات: ${err.message}
+       </div>`;
+    $("tbody").innerHTML = "<tr><td colspan='7'>داده‌ای دریافت نشد.</td></tr>";
+    $("status").textContent = "اسکن ناموفق بود.";
+  }finally{
+    $("scanBtn").disabled = false;
+    scanning = false;
+  }
+}
+
+function render(rows,threshold){
+  if(!rows.length){
+    $("tbody").innerHTML =
+      `<tr><td colspan="7">هیچ ارزی با رشد حداقل ${faNum(threshold)}٪ پیدا نشد.</td></tr>`;
+    return;
+  }
+
+  $("tbody").innerHTML = rows.map((r,i)=>{
+    const g1 = r.g1;
+    const g4 = r.g4;
+    const g1ok = g1 !== null && g1 >= threshold;
+    const g4ok = g4 !== null && g4 >= threshold;
+
+    let state = "";
+    if(g1ok && g4ok) state = `<span class="badge">۱ساعته + ۴ساعته</span>`;
+    else if(g1ok) state = `<span class="badge">۱ساعته</span>`;
+    else state = `<span class="badge">۴ساعته</span>`;
+
+    return `<tr>
+      <td>${faNum(i+1)}</td>
+      <td class="symbol">${r.symbol.replace("IRT","").replace("USDT","")} / ${r.symbol.endsWith("IRT")?"IRT":"USDT"}</td>
+      <td>${r.price ? faNum(r.price,0) : "—"}</td>
+      <td class="${g1ok?'up':''}">${g1===null?'—':(g1>=0?'+':'')+faNum(g1)+'٪'}</td>
+      <td class="${g4ok?'up':''}">${g4===null?'—':(g4>=0?'+':'')+faNum(g4)+'٪'}</td>
+      <td>${state}</td>
+      <td class="small">${new Date(r.time).toLocaleTimeString("fa-IR")}</td>
+    </tr>`;
+  }).join("");
+}
+
+$("scanBtn").addEventListener("click",scan);
+
+$("autoBtn").addEventListener("click",()=>{
+  if(autoTimer){
+    clearInterval(autoTimer);
+    autoTimer=null;
+    $("autoBtn").textContent="▶ شروع بروزرسانی خودکار";
+    return;
+  }
+
+  scan();
+  autoTimer=setInterval(scan,5*60*1000);
+  $("autoBtn").textContent="⏹ توقف بروزرسانی خودکار";
+});
+
+// اسکن اولیه
+scan();
+</script>
+</body>
+</html>
