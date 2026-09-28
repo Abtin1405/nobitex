@@ -2,338 +2,531 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>اسکنر رشد نوبیتکس</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebGIS صنعت برق</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
+
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#0b1220;color:#e8eef7}
-header{background:linear-gradient(135deg,#101b31,#172a46);padding:20px;text-align:center;border-bottom:1px solid #263956}
-h1{margin:0 0 8px;font-size:23px}
-.sub{color:#9fb0c7;font-size:13px}
-.wrap{max-width:1100px;margin:auto;padding:16px}
-.controls{background:#111c2e;border:1px solid #263956;border-radius:14px;padding:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-button,select,input{font-family:inherit;border-radius:9px;border:1px solid #334966;background:#0d1727;color:#fff;padding:10px 12px}
-button{cursor:pointer;background:#1769aa;border-color:#287fbd}
-button:hover{background:#2182ce}
-input{width:90px}
-.status{margin-top:12px;color:#aebed2;font-size:13px}
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
-.card{background:#111c2e;border:1px solid #263956;border-radius:12px;padding:13px}
-.card b{display:block;font-size:20px;margin-top:5px}
-.tablebox{overflow:auto;background:#111c2e;border:1px solid #263956;border-radius:14px}
-table{width:100%;border-collapse:collapse;min-width:700px}
-th,td{padding:12px 9px;border-bottom:1px solid #23344c;text-align:center}
-th{background:#17263d;color:#b9c9dc;font-size:13px}
-td{font-size:14px}
-.symbol{font-weight:bold;color:#fff}
-.up{color:#34d399;font-weight:bold}
-.down{color:#f87171}
-.badge{display:inline-block;padding:4px 8px;border-radius:20px;background:#123e31;color:#4ade80;font-size:12px}
-.warn{background:#402f12;color:#fbbf24}
-.error{background:#431b23;color:#fb7185;padding:12px;border-radius:10px;margin-top:12px;line-height:1.8}
-.info{background:#12263a;color:#9fd3ff;padding:12px;border-radius:10px;margin-top:12px;line-height:1.8}
-.small{font-size:11px;color:#8093aa}
+html,body{margin:0;height:100%;font-family:Tahoma,Arial,sans-serif;background:#0b1220;color:#e5e7eb}
+#map{height:100vh;width:100%}
+
+.topbar{
+ position:absolute;z-index:1000;top:12px;right:12px;left:12px;
+ min-height:54px;background:rgba(12,20,34,.94);border:1px solid #26344b;
+ border-radius:12px;display:flex;align-items:center;gap:8px;padding:8px 12px;
+ box-shadow:0 8px 25px rgba(0,0,0,.35)
+}
+.title{font-size:17px;font-weight:bold;margin-left:auto;color:#7dd3fc}
+button,.fileLabel{
+ background:#17243a;color:#e5e7eb;border:1px solid #33445e;border-radius:7px;
+ padding:8px 11px;cursor:pointer;font-family:inherit;font-size:12px
+}
+button:hover,.fileLabel:hover{background:#213451}
+button.active{background:#075985;border-color:#0ea5e9}
+input,select{
+ background:#101a2b;color:#e5e7eb;border:1px solid #33445e;border-radius:6px;
+ padding:7px;font-family:inherit
+}
+#panel{
+ position:absolute;z-index:1000;top:78px;right:12px;width:315px;max-height:calc(100vh - 95px);
+ overflow:auto;background:rgba(10,18,31,.96);border:1px solid #26344b;border-radius:12px;
+ padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.4)
+}
+.section{border-bottom:1px solid #27364d;padding-bottom:12px;margin-bottom:12px}
+.section:last-child{border-bottom:0}
+.section h3{font-size:14px;color:#7dd3fc;margin:4px 0 10px}
+.layer{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:13px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.coords{position:absolute;z-index:1000;bottom:10px;right:10px;background:rgba(10,18,31,.9);
+padding:7px 10px;border-radius:7px;font-size:11px;border:1px solid #26344b}
+.legendRow{display:flex;align-items:center;gap:7px;margin:6px 0;font-size:12px}
+.info{
+ position:absolute;z-index:1001;bottom:40px;left:10px;right:auto;width:360px;
+ max-height:45vh;overflow:auto;background:rgba(10,18,31,.97);border:1px solid #33445e;
+ border-radius:10px;padding:12px;display:none
+}
+.info h3{margin:0 0 10px;color:#7dd3fc}
+.attrTable{width:100%;border-collapse:collapse;font-size:11px;direction:rtl}
+.attrTable td{border:1px solid #33445e;padding:6px;vertical-align:top}
+.attrTable td:first-child{color:#93c5fd;width:38%}
+.searchBox{display:flex;gap:5px}
+.searchBox input{width:100%}
+.small{font-size:10px;color:#94a3b8;line-height:1.8}
+#measureResult{color:#fbbf24;font-size:12px;margin-top:7px}
+#coordResult{color:#86efac;font-size:12px;margin-top:7px;line-height:1.8}
+#featureCount{color:#cbd5e1;font-size:11px}
+.fileLabel input{display:none}
+.leaflet-control-layers{display:none}
+.leaflet-popup-content{direction:rtl;text-align:right}
+.popupTable{border-collapse:collapse;font-size:11px;max-width:280px}
+.popupTable td{border:1px solid #ccc;padding:4px}
 @media(max-width:700px){
- .cards{grid-template-columns:1fr}
- h1{font-size:19px}
- .controls>*{width:100%}
- input,select,button{width:100%}
+ .topbar{top:6px;right:6px;left:6px;overflow-x:auto;white-space:nowrap}
+ .title{font-size:13px}
+ #panel{top:65px;right:6px;width:285px;max-height:70vh}
+ .info{left:6px;bottom:35px;width:calc(100% - 12px);max-height:38vh}
 }
 </style>
 </head>
+
 <body>
 
-<header>
-  <h1>📈 اسکنر رشد ارزهای نوبیتکس</h1>
-  <div class="sub">شناسایی ارزهایی که در کندل ۱ ساعته یا ۴ ساعته بیش از آستانه تعیین‌شده رشد کرده‌اند</div>
-</header>
+<div id="map"></div>
 
-<div class="wrap">
+<div class="topbar">
+ <div class="title">⚡ WebGIS صنعت برق</div>
+ <button onclick="togglePanel()">☰ مدیریت</button>
+ <button onclick="locateMe()">📍 موقعیت من</button>
+ <button onclick="clearImported()">🗑 پاکسازی ورود</button>
+</div>
 
-  <div class="controls">
-    <label>بازار:
-      <select id="market">
-        <option value="IRT">ریالی (IRT)</option>
-        <option value="USDT">تتری (USDT)</option>
-      </select>
-    </label>
+<div id="panel">
 
-    <label>آستانه رشد:
-      <input id="threshold" type="number" value="5" min="0.1" step="0.1"> %
-    </label>
+<div class="section">
+<h3>🗺 نقشه پایه</h3>
+<select id="basemapSelect" style="width:100%" onchange="changeBasemap(this.value)">
+<option value="osm">OpenStreetMap</option>
+<option value="esri">Esri Satellite</option>
+<option value="google">Google</option>
+<option value="googleSat">Google Satellite</option>
+<option value="dark">Dark GIS</option>
+</select>
+</div>
 
-    <label>نوع کندل:
-      <select id="candleMode">
-        <option value="closed">کندل بسته‌شده</option>
-        <option value="current">کندل جاری</option>
-      </select>
-    </label>
+<div class="section">
+<h3>⚡ مدیریت لایه‌های شبکه برق</h3>
 
-    <button id="scanBtn">🔎 اسکن بازار</button>
-    <button id="autoBtn">▶ شروع بروزرسانی خودکار</button>
-  </div>
+<label class="layer"><input type="checkbox" checked onchange="toggleLayer('line',this.checked)"> <span class="dot" style="background:#ef4444"></span> خط انتقال و فوق‌توزیع</label>
+<label class="layer"><input type="checkbox" checked onchange="toggleLayer('post',this.checked)"> <span class="dot" style="background:#f59e0b"></span> پست</label>
+<label class="layer"><input type="checkbox" checked onchange="toggleLayer('county',this.checked)"> <span class="dot" style="background:#22c55e"></span> شهرستان</label>
+<label class="layer"><input type="checkbox" checked onchange="toggleLayer('plant',this.checked)"> <span class="dot" style="background:#a855f7"></span> نیروگاه</label>
+<label class="layer"><input type="checkbox" checked onchange="toggleLayer('tower',this.checked)"> <span class="dot" style="background:#06b6d4"></span> دکل</label>
+<label class="layer"><input type="checkbox" checked onchange="toggleLayer('dg',this.checked)"> <span class="dot" style="background:#84cc16"></span> DG</label>
 
-  <div id="status" class="status">آماده اسکن...</div>
+<div id="featureCount">برای اتصال لایه‌های واقعی، فایل GeoJSON هر لایه را در پوشه data قرار دهید.</div>
+</div>
 
-  <div class="cards">
-    <div class="card">تعداد بازارهای بررسی‌شده<b id="total">۰</b></div>
-    <div class="card">رشد بالای آستانه در ۱ ساعت<b id="count1">۰</b></div>
-    <div class="card">رشد بالای آستانه در ۴ ساعت<b id="count4">۰</b></div>
-  </div>
+<div class="section">
+<h3>📂 ورود داده</h3>
+<label class="fileLabel">➕ KML / KMZ / GeoJSON / JSON
+<input type="file" id="dataFile" accept=".kml,.kmz,.geojson,.json" onchange="importData(this)">
+</label>
+<br><br>
+<label class="fileLabel">➕ SHP
+<input type="file" id="shpFiles" accept=".shp,.dbf,.shx,.prj,.cpg" multiple onchange="importShp(this)">
+</label>
+<p class="small">برای SHP بهتر است فایل‌های SHP، SHX و DBF و در صورت وجود PRJ را همزمان انتخاب کنید.</p>
+</div>
 
-  <div id="message"></div>
+<div class="section">
+<h3>📏 اندازه‌گیری</h3>
+<button onclick="startLength()">اندازه‌گیری طول</button>
+<button onclick="startArea()">اندازه‌گیری مساحت</button>
+<button onclick="clearMeasure()">پاک کردن</button>
+<div id="measureResult"></div>
+</div>
 
-  <div class="tablebox">
-    <table>
-      <thead>
-        <tr>
-          <th>ردیف</th>
-          <th>ارز</th>
-          <th>قیمت فعلی</th>
-          <th>رشد ۱ ساعت</th>
-          <th>رشد ۴ ساعت</th>
-          <th>وضعیت</th>
-          <th>آخرین بروزرسانی</th>
-        </tr>
-      </thead>
-      <tbody id="tbody">
-        <tr><td colspan="7">برای شروع روی «اسکن بازار» بزنید.</td></tr>
-      </tbody>
-    </table>
-  </div>
+<div class="section">
+<h3>📍 رفتن به مختصات</h3>
+<select id="coordType" style="width:100%;margin-bottom:6px">
+<option value="utm">UTM</option>
+<option value="dms">DMS</option>
+<option value="decimal">Lat / Lon</option>
+</select>
+<div id="utmInputs">
+<input id="utmZone" placeholder="Zone مثال 39" style="width:30%">
+<input id="utmE" placeholder="Easting" style="width:32%">
+<input id="utmN" placeholder="Northing" style="width:32%">
+</div>
+<div id="dmsInputs" style="display:none">
+<input id="dLat" placeholder="Lat: 29°36'00&quot;N" style="width:100%;margin-bottom:5px">
+<input id="dLon" placeholder="Lon: 52°32'00&quot;E" style="width:100%">
+</div>
+<div id="decInputs" style="display:none">
+<input id="decLat" placeholder="Latitude" style="width:49%">
+<input id="decLon" placeholder="Longitude" style="width:49%">
+</div>
+<br>
+<button onclick="goCoordinate()">📍 برو</button>
+<div id="coordResult"></div>
+</div>
 
-  <div class="info">
-    <b>روش محاسبه:</b> درصد رشد هر کندل از فرمول
-    <b>(قیمت بسته‌شدن − قیمت بازشدن) ÷ قیمت بازشدن × 100</b>
-    محاسبه می‌شود. در حالت «کندل بسته‌شده»، آخرین کندل کامل استفاده می‌شود.
-    <br><br>
-    <b>نکته:</b> این صفحه فقط داده عمومی بازار نوبیتکس را می‌خواند و به API Key یا اطلاعات حساب شما نیاز ندارد.
-  </div>
+<div class="section">
+<h3>🔎 جستجوی عوارض</h3>
+<div class="searchBox">
+<input id="searchText" placeholder="مثلاً نام پست یا نیروگاه">
+<button onclick="searchFeatures()">جستجو</button>
+</div>
+</div>
+
+<div class="section">
+<h3>📌 راهنما</h3>
+<div class="small">
+با کلیک روی هر عارضه، اطلاعات توصیفی آن نمایش داده می‌شود.
+<br>برای افزودن لایه‌های واقعی، فایل‌های GeoJSON خود را در مسیر data قرار دهید و نام فایل را مطابق کد تنظیم کنید.
+</div>
+</div>
 
 </div>
 
+<div id="info" class="info"></div>
+<div id="coords" class="coords">مختصات: -</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+<script src="https://unpkg.com/togeojson@6.0.0/dist/togeojson.umd.js"></script>
+<script src="https://unpkg.com/shpjs@6.1.0/dist/shp.js"></script>
+
 <script>
-const API = "https://api.nobitex.ir";
-let autoTimer = null;
-let scanning = false;
+const map=L.map('map',{zoomControl:true}).setView([29.60,52.50],7);
 
-const $ = id => document.getElementById(id);
+const basemaps={};
+basemaps.osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'});
+basemaps.esri=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri'});
+basemaps.google=L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{attribution:'© Google'});
+basemaps.googleSat=L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{attribution:'© Google'});
+basemaps.dark=L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO'});
+basemaps.osm.addTo(map);
 
-function faNum(n, digits=2){
-  if(n === null || n === undefined || Number.isNaN(n)) return "—";
-  return Number(n).toLocaleString("fa-IR",{maximumFractionDigits:digits});
-}
+const layerStyles={
+ line:{color:'#ef4444',weight:3},
+ post:{color:'#f59e0b',radius:7,fillOpacity:.85},
+ county:{color:'#22c55e',weight:2,fillOpacity:.08},
+ plant:{color:'#a855f7',radius:8,fillOpacity:.9},
+ tower:{color:'#06b6d4',radius:5,fillOpacity:.9},
+ dg:{color:'#84cc16',radius:6,fillOpacity:.9}
+};
 
-function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+const layers={};
+const files={
+ line:'data/line.geojson',
+ post:'data/post.geojson',
+ county:'data/shahrestan.geojson',
+ plant:'data/powerplant.geojson',
+ tower:'data/tower.geojson',
+ dg:'data/dg.geojson'
+};
 
-async function getJSON(url){
-  const res = await fetch(url, {cache:"no-store"});
-  if(!res.ok) throw new Error("HTTP " + res.status);
-  return await res.json();
-}
+const imported=L.featureGroup().addTo(map);
+const drawnItems=new L.FeatureGroup().addTo(map);
 
-// دریافت تمام بازارهای یک ارز مقصد
-async function getMarkets(marketType){
-  if(marketType === "IRT"){
-    const data = await getJSON(API + "/market/stats?dstCurrency=rls");
-    return Object.keys(data.stats || {})
-      .filter(k => k.endsWith("-rls"))
-      .map(k => k.split("-")[0].toUpperCase() + "IRT");
-  }else{
-    const data = await getJSON(API + "/market/stats?dstCurrency=usdt");
-    return Object.keys(data.stats || {})
-      .filter(k => k.endsWith("-usdt"))
-      .map(k => k.split("-")[0].toUpperCase() + "USDT");
-  }
-}
-
-// دریافت آخرین کندل‌ها
-async function getCandles(symbol,resolution){
-  const now = Math.floor(Date.now()/1000);
-  // کمی به عقب‌تر می‌رویم تا کندل بسته‌شده قطعی داشته باشیم
-  const from = now - resolution * 60 * 8;
-  const url = API + "/market/udf/history"
-    + "?symbol=" + encodeURIComponent(symbol)
-    + "&resolution=" + resolution
-    + "&from=" + from
-    + "&to=" + now;
-
-  return await getJSON(url);
-}
-
-function candleGrowth(data, mode){
-  if(!data || data.s !== "ok" || !data.o || !data.c || data.o.length < 1)
-    return null;
-
-  let i = data.o.length - 1;
-
-  // آخرین کندل در حالت بسته‌شده حذف می‌شود؛
-  // چون ممکن است هنوز در حال شکل‌گیری باشد.
-  if(mode === "closed" && data.o.length >= 2) i--;
-
-  const open = Number(data.o[i]);
-  const close = Number(data.c[i]);
-
-  if(!open || !close) return null;
-
-  return {
-    growth: ((close-open)/open)*100,
-    open,
-    close,
-    time: Number(data.t[i])*1000
-  };
-}
-
-function sortRows(rows){
-  rows.sort((a,b)=>{
-    const aMax = Math.max(a.g1 ?? -9999,a.g4 ?? -9999);
-    const bMax = Math.max(b.g1 ?? -9999,b.g4 ?? -9999);
-    return bMax-aMax;
+function featurePopup(properties){
+ let html='<table class="popupTable">';
+ if(properties){
+  Object.keys(properties).forEach(k=>{
+   let v=properties[k];
+   if(typeof v==='object')v=JSON.stringify(v);
+   html+=`<tr><td><b>${escapeHtml(k)}</b></td><td>${escapeHtml(String(v??''))}</td></tr>`;
   });
+ }
+ html+='</table>';
+ return html;
 }
 
-async function scan(){
-  if(scanning) return;
-  scanning = true;
-
-  const threshold = Number($("threshold").value) || 5;
-  const market = $("market").value;
-  const mode = $("candleMode").value;
-
-  $("scanBtn").disabled = true;
-  $("message").innerHTML = "";
-  $("tbody").innerHTML = "<tr><td colspan='7'>در حال دریافت اطلاعات بازار...</td></tr>";
-  $("status").textContent = "در حال دریافت فهرست بازارها...";
-
-  try{
-    const markets = await getMarkets(market);
-    $("total").textContent = faNum(markets.length);
-
-    const rows = [];
-    let done = 0;
-
-    /*
-      برای جلوگیری از فشار زیاد به API، درخواست‌ها به صورت دسته‌ای
-      و با مکث کوتاه ارسال می‌شوند.
-    */
-    const batchSize = 6;
-
-    for(let i=0;i<markets.length;i+=batchSize){
-      const batch = markets.slice(i,i+batchSize);
-
-      const results = await Promise.all(batch.map(async symbol=>{
-        try{
-          const [d1,d4] = await Promise.all([
-            getCandles(symbol,"60"),
-            getCandles(symbol,"240")
-          ]);
-
-          const c1 = candleGrowth(d1,mode);
-          const c4 = candleGrowth(d4,mode);
-
-          return {
-            symbol,
-            g1: c1 ? c1.growth : null,
-            g4: c4 ? c4.growth : null,
-            price: c1 ? c1.close : (c4 ? c4.close : null),
-            time: c1 ? c1.time : Date.now()
-          };
-        }catch(e){
-          return {symbol,g1:null,g4:null,price:null,time:Date.now(),error:true};
-        }
-      }));
-
-      rows.push(...results);
-      done += batch.length;
-      $("status").textContent = `در حال بررسی ${faNum(done)} از ${faNum(markets.length)} بازار...`;
-
-      // مکث کوتاه برای کاهش احتمال محدودیت درخواست
-      await sleep(250);
-    }
-
-    sortRows(rows);
-
-    const hit1 = rows.filter(x => x.g1 !== null && x.g1 >= threshold).length;
-    const hit4 = rows.filter(x => x.g4 !== null && x.g4 >= threshold).length;
-
-    $("count1").textContent = faNum(hit1);
-    $("count4").textContent = faNum(hit4);
-
-    // فقط ارزهایی که حداقل در یکی از دو تایم‌فریم از آستانه عبور کرده‌اند
-    const filtered = rows.filter(x =>
-      (x.g1 !== null && x.g1 >= threshold) ||
-      (x.g4 !== null && x.g4 >= threshold)
-    );
-
-    render(filtered, threshold);
-
-    const now = new Date().toLocaleTimeString("fa-IR");
-    $("status").textContent =
-      `اسکن کامل شد: ${faNum(filtered.length)} ارز از آستانه ${faNum(threshold)}٪ عبور کرده‌اند — ${now}`;
-
-  }catch(err){
-    console.error(err);
-    $("message").innerHTML =
-      `<div class="error">
-       خطا در دریافت اطلاعات از نوبیتکس.<br>
-       ممکن است API موقتاً در دسترس نباشد یا مرورگر دسترسی Cross-Origin را محدود کرده باشد.
-       <br>جزئیات: ${err.message}
-       </div>`;
-    $("tbody").innerHTML = "<tr><td colspan='7'>داده‌ای دریافت نشد.</td></tr>";
-    $("status").textContent = "اسکن ناموفق بود.";
-  }finally{
-    $("scanBtn").disabled = false;
-    scanning = false;
-  }
+function escapeHtml(s){
+ return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 }
 
-function render(rows,threshold){
-  if(!rows.length){
-    $("tbody").innerHTML =
-      `<tr><td colspan="7">هیچ ارزی با رشد حداقل ${faNum(threshold)}٪ پیدا نشد.</td></tr>`;
-    return;
-  }
-
-  $("tbody").innerHTML = rows.map((r,i)=>{
-    const g1 = r.g1;
-    const g4 = r.g4;
-    const g1ok = g1 !== null && g1 >= threshold;
-    const g4ok = g4 !== null && g4 >= threshold;
-
-    let state = "";
-    if(g1ok && g4ok) state = `<span class="badge">۱ساعته + ۴ساعته</span>`;
-    else if(g1ok) state = `<span class="badge">۱ساعته</span>`;
-    else state = `<span class="badge">۴ساعته</span>`;
-
-    return `<tr>
-      <td>${faNum(i+1)}</td>
-      <td class="symbol">${r.symbol.replace("IRT","").replace("USDT","")} / ${r.symbol.endsWith("IRT")?"IRT":"USDT"}</td>
-      <td>${r.price ? faNum(r.price,0) : "—"}</td>
-      <td class="${g1ok?'up':''}">${g1===null?'—':(g1>=0?'+':'')+faNum(g1)+'٪'}</td>
-      <td class="${g4ok?'up':''}">${g4===null?'—':(g4>=0?'+':'')+faNum(g4)+'٪'}</td>
-      <td>${state}</td>
-      <td class="small">${new Date(r.time).toLocaleTimeString("fa-IR")}</td>
-    </tr>`;
-  }).join("");
+function styleFor(type){
+ const s=layerStyles[type];
+ return s;
 }
 
-$("scanBtn").addEventListener("click",scan);
+async function loadLayer(type){
+ try{
+  const r=await fetch(files[type]);
+  if(!r.ok) throw new Error(r.status);
+  const geo=await r.json();
 
-$("autoBtn").addEventListener("click",()=>{
-  if(autoTimer){
-    clearInterval(autoTimer);
-    autoTimer=null;
-    $("autoBtn").textContent="▶ شروع بروزرسانی خودکار";
-    return;
-  }
+  layers[type]=L.geoJSON(geo,{
+   style: type==='line'||type==='county' ? styleFor(type) : undefined,
+   pointToLayer:(f,ll)=>{
+    const s=styleFor(type);
+    return L.circleMarker(ll,s);
+   },
+   onEachFeature:(f,l)=>{
+    l.on('click',()=>showInfo(type,f.properties||{}));
+    l.bindPopup(featurePopup(f.properties||{}));
+   }
+  }).addTo(map);
 
-  scan();
-  autoTimer=setInterval(scan,5*60*1000);
-  $("autoBtn").textContent="⏹ توقف بروزرسانی خودکار";
+  updateCount();
+ }catch(e){
+  // لایه‌ای که هنوز فایل آن وجود ندارد، خطا را در صفحه نمایش نمی‌دهد.
+ }
+}
+
+Object.keys(files).forEach(loadLayer);
+
+function toggleLayer(type,on){
+ if(!layers[type])return;
+ if(on) layers[type].addTo(map);
+ else map.removeLayer(layers[type]);
+}
+
+function updateCount(){
+ let n=0;
+ Object.values(layers).forEach(l=>{
+  if(l&&l.getLayers)n+=l.getLayers().length;
+ });
+ document.getElementById('featureCount').innerText='تعداد عوارض بارگذاری‌شده: '+n;
+}
+
+function showInfo(type,p){
+ const box=document.getElementById('info');
+ let html=`<h3>📋 مشخصات عارضه — ${type}</h3>`;
+ html+='<table class="attrTable">';
+ Object.keys(p).forEach(k=>{
+  let v=p[k];
+  if(typeof v==='object')v=JSON.stringify(v);
+  html+=`<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(String(v??''))}</td></tr>`;
+ });
+ html+='</table>';
+ if(Object.keys(p).length===0)html+='<div class="small">اطلاعات توصیفی برای این عارضه وجود ندارد.</div>';
+ html+='<br><button onclick="document.getElementById(\'info\').style.display=\'none\'">بستن</button>';
+ box.innerHTML=html;
+ box.style.display='block';
+}
+
+function changeBasemap(v){
+ Object.values(basemaps).forEach(b=>map.removeLayer(b));
+ basemaps[v].addTo(map);
+}
+
+function togglePanel(){
+ const p=document.getElementById('panel');
+ p.style.display=p.style.display==='none'?'block':'none';
+}
+
+map.on('mousemove',e=>{
+ document.getElementById('coords').innerText=
+ 'مختصات: '+e.latlng.lat.toFixed(6)+' , '+e.latlng.lng.toFixed(6);
 });
 
-// اسکن اولیه
-scan();
+map.on('click',()=>document.getElementById('info').style.display='none');
+
+const drawControl=new L.Control.Draw({
+ edit:{featureGroup:drawnItems},
+ draw:{
+  polygon:true,polyline:true,rectangle:false,circle:false,
+  marker:false,circlemarker:false
+ }
+});
+map.addControl(drawControl);
+
+map.on(L.Draw.Event.CREATED,e=>{
+ drawnItems.addLayer(e.layer);
+ const layer=e.layer;
+ if(e.layerType==='polyline'){
+  const meters=calcLine(layer.getLatLngs());
+  document.getElementById('measureResult').innerText='طول: '+formatDistance(meters);
+ }
+ if(e.layerType==='polygon'){
+  const area=calcArea(layer.getLatLngs()[0]);
+  document.getElementById('measureResult').innerText='مساحت: '+formatArea(area);
+ }
+});
+
+function calcLine(latlngs){
+ let total=0;
+ for(let i=1;i<latlngs.length;i++)total+=map.distance(latlngs[i-1],latlngs[i]);
+ return total;
+}
+
+function calcArea(points){
+ let area=0;
+ const R=6378137;
+ for(let i=0,j=points.length-1;i<points.length;j=i++){
+  const p1=points[i],p2=points[j];
+  area+=(p2.lng-p1.lng)*Math.PI/180*
+    (2+Math.sin(p1.lat*Math.PI/180)+Math.sin(p2.lat*Math.PI/180));
+ }
+ return Math.abs(area*R*R/2);
+}
+
+function formatDistance(m){
+ return m<1000?m.toFixed(2)+' متر':(m/1000).toFixed(3)+' کیلومتر';
+}
+function formatArea(a){
+ return a<10000?a.toFixed(2)+' مترمربع':(a/10000).toFixed(3)+' هکتار';
+}
+function startLength(){
+ new L.Draw.Polyline(map,{shapeOptions:{color:'#fbbf24',weight:4}}).enable();
+}
+function startArea(){
+ new L.Draw.Polygon(map,{shapeOptions:{color:'#fbbf24',fillOpacity:.15}}).enable();
+}
+function clearMeasure(){
+ drawnItems.clearLayers();
+ document.getElementById('measureResult').innerText='';
+}
+
+document.getElementById('coordType').onchange=function(){
+ document.getElementById('utmInputs').style.display=this.value==='utm'?'block':'none';
+ document.getElementById('dmsInputs').style.display=this.value==='dms'?'block':'none';
+ document.getElementById('decInputs').style.display=this.value==='decimal'?'block':'none';
+};
+
+function utmToLatLon(easting,northing,zone,hemisphere='N'){
+ const a=6378137, eccSquared=0.00669438, k0=0.9996;
+ const x=easting-500000;
+ let y=northing;
+ if(hemisphere==='S')y-=10000000;
+ const eccPrimeSquared=eccSquared/(1-eccSquared);
+ const M=y/k0;
+ const mu=M/(a*(1-eccSquared/4-3*eccSquared**2/64-5*eccSquared**3/256));
+ const e1=(1-Math.sqrt(1-eccSquared))/(1+Math.sqrt(1-eccSquared));
+ const J1=3*e1/2-27*e1**3/32;
+ const J2=21*e1**2/16-55*e1**4/32;
+ const J3=151*e1**3/96;
+ const J4=1097*e1**4/512;
+ const fp=mu+J1*Math.sin(2*mu)+J2*Math.sin(4*mu)+J3*Math.sin(6*mu)+J4*Math.sin(8*mu);
+ const N1=a/Math.sqrt(1-eccSquared*Math.sin(fp)**2);
+ const T1=Math.tan(fp)**2;
+ const C1=eccPrimeSquared*Math.cos(fp)**2;
+ const R1=a*(1-eccSquared)/Math.pow(1-eccSquared*Math.sin(fp)**2,1.5);
+ const D=x/(N1*k0);
+ let lat=fp-(N1*Math.tan(fp)/R1)*(D**2/2-(5+3*T1+10*C1-4*C1**2-9*eccPrimeSquared)*D**4/24+
+ (61+90*T1+298*C1+45*T1**2-252*eccPrimeSquared-3*C1**2)*D**6/720);
+ let lon=(D-(1+2*T1+C1)*D**3/6+(5-2*C1+28*T1-3*C1**2+8*eccPrimeSquared+24*T1**2)*D**5/120)/Math.cos(fp);
+ lon=(zone-1)*6-180+3+lon*180/Math.PI;
+ lat=lat*180/Math.PI;
+ return [lat,lon];
+}
+
+function parseDMS(v){
+ v=v.trim().replace(/°/g,' ').replace(/'/g,' ').replace(/"/g,' ');
+ const p=v.split(/\s+/).filter(Boolean);
+ if(p.length<3)return NaN;
+ let deg=parseFloat(p[0]),min=parseFloat(p[1]),sec=parseFloat(p[2]);
+ let sign=deg<0?-1:1;
+ let last=v.toUpperCase();
+ if(/[SW]$/.test(last))sign=-1;
+ if(/[NE]$/.test(last))sign=1;
+ return sign*(Math.abs(deg)+min/60+sec/3600);
+}
+
+function goCoordinate(){
+ const type=document.getElementById('coordType').value;
+ let lat,lon;
+ try{
+  if(type==='utm'){
+   const z=parseInt(document.getElementById('utmZone').value);
+   const e=parseFloat(document.getElementById('utmE').value);
+   const n=parseFloat(document.getElementById('utmN').value);
+   if(!z||isNaN(e)||isNaN(n))throw 0;
+   [lat,lon]=utmToLatLon(e,n,z,'N');
+  }else if(type==='dms'){
+   lat=parseDMS(document.getElementById('dLat').value);
+   lon=parseDMS(document.getElementById('dLon').value);
+  }else{
+   lat=parseFloat(document.getElementById('decLat').value);
+   lon=parseFloat(document.getElementById('decLon').value);
+  }
+  if(!isFinite(lat)||!isFinite(lon))throw 0;
+  map.setView([lat,lon],15);
+  L.marker([lat,lon]).addTo(map).bindPopup('مختصات مقصد').openPopup();
+  document.getElementById('coordResult').innerText=`Lat: ${lat.toFixed(6)} | Lon: ${lon.toFixed(6)}`;
+ }catch(e){
+  document.getElementById('coordResult').innerText='مختصات واردشده صحیح نیست.';
+ }
+}
+
+function locateMe(){
+ map.locate({setView:true,maxZoom:16,enableHighAccuracy:true});
+}
+map.on('locationfound',e=>{
+ L.circleMarker(e.latlng,{radius:8,color:'#22c55e',fillOpacity:.8}).addTo(map)
+ .bindPopup('موقعیت فعلی').openPopup();
+});
+
+async function importData(input){
+ const file=input.files[0];
+ if(!file)return;
+ try{
+  let geojson;
+  if(file.name.toLowerCase().endsWith('.kml')||file.name.toLowerCase().endsWith('.kmz')){
+   if(file.name.toLowerCase().endsWith('.kmz')){
+    alert('برای KMZ لطفاً ابتدا آن را به KML تبدیل کنید؛ نسخه فعلی ورود مستقیم KML را پشتیبانی می‌کند.');
+    return;
+   }
+   const text=await file.text();
+   const xml=new DOMParser().parseFromString(text,'text/xml');
+   geojson=toGeoJSON.kml(xml);
+  }else{
+   geojson=JSON.parse(await file.text());
+  }
+  addImportedGeoJSON(geojson,file.name);
+ }catch(e){
+  alert('خطا در خواندن فایل: '+e.message);
+ }
+ input.value='';
+}
+
+async function importShp(input){
+ const files=input.files;
+ if(!files.length)return;
+ try{
+  const arr=Array.from(files);
+  const shpFile=arr.find(f=>f.name.toLowerCase().endsWith('.shp'));
+  if(!shpFile)throw new Error('فایل SHP انتخاب نشده است.');
+
+  const buffer=await shpFile.arrayBuffer();
+  const geo=await shp(buffer);
+  addImportedGeoJSON(geo,shpFile.name);
+ }catch(e){
+  alert('خطا در خواندن SHP: '+e.message);
+ }
+ input.value='';
+}
+
+function addImportedGeoJSON(geo,name){
+ const l=L.geoJSON(geo,{
+  style:{color:'#fbbf24',weight:3,fillOpacity:.15},
+  pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:7,color:'#fbbf24',fillOpacity:.8}),
+  onEachFeature:(f,layer)=>{
+   layer.bindPopup(featurePopup(f.properties||{}));
+   layer.on('click',()=>showInfo('ورودی: '+name,f.properties||{}));
+  }
+ });
+ imported.addLayer(l);
+ try{
+  map.fitBounds(l.getBounds(),{padding:[30,30]});
+ }catch(e){}
+ updateImportedCount();
+}
+
+function updateImportedCount(){
+ let n=imported.getLayers().reduce((a,l)=>a+(l.getLayers?l.getLayers().length:1),0);
+ document.getElementById('featureCount').innerText+=' | عوارض واردشده: '+n;
+}
+
+function clearImported(){
+ imported.clearLayers();
+}
+
+function searchFeatures(){
+ const q=document.getElementById('searchText').value.trim().toLowerCase();
+ if(!q)return;
+ let found=null;
+ Object.values(layers).forEach(group=>{
+  if(found||!group)return;
+  group.eachLayer(l=>{
+   if(found||!l.feature)return;
+   const p=l.feature.properties||{};
+   const txt=JSON.stringify(p).toLowerCase();
+   if(txt.includes(q))found=l;
+  });
+ });
+ if(found){
+  if(found.getBounds)map.fitBounds(found.getBounds(),{maxZoom:16});
+  else if(found.getLatLng)map.setView(found.getLatLng(),16);
+  found.openPopup();
+ }else alert('عارضه‌ای با این عبارت پیدا نشد.');
+}
 </script>
 </body>
 </html>
