@@ -3,177 +3,311 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WebGIS صنعت برق</title>
+<title>WebGIS شبکه برق</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
 
 <style>
+:root{
+ --bg:#08111f;--panel:#0d1929;--panel2:#111f33;--line:#263951;
+ --text:#e8eef7;--muted:#8fa3ba;--accent:#18a9e8;--accent2:#0b75a5;
+}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;font-family:Tahoma,Arial,sans-serif;background:#0b1220;color:#e5e7eb}
-#map{height:100vh;width:100%}
-
-.topbar{
- position:absolute;z-index:1000;top:12px;right:12px;left:12px;
- min-height:54px;background:rgba(12,20,34,.94);border:1px solid #26344b;
- border-radius:12px;display:flex;align-items:center;gap:8px;padding:8px 12px;
- box-shadow:0 8px 25px rgba(0,0,0,.35)
+html,body{margin:0;width:100%;height:100%;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text)}
+#map{position:absolute;inset:0}
+button,input,select{font-family:inherit}
+button{
+ background:#16263b;color:var(--text);border:1px solid #30465f;border-radius:7px;
+ padding:8px 10px;cursor:pointer;font-size:12px
 }
-.title{font-size:17px;font-weight:bold;margin-left:auto;color:#7dd3fc}
-button,.fileLabel{
- background:#17243a;color:#e5e7eb;border:1px solid #33445e;border-radius:7px;
- padding:8px 11px;cursor:pointer;font-family:inherit;font-size:12px
-}
-button:hover,.fileLabel:hover{background:#213451}
-button.active{background:#075985;border-color:#0ea5e9}
+button:hover{background:#1c3652}
+button.primary{background:#087fb2;border-color:#18a9e8}
 input,select{
- background:#101a2b;color:#e5e7eb;border:1px solid #33445e;border-radius:6px;
- padding:7px;font-family:inherit
+ width:100%;background:#0a1524;color:var(--text);border:1px solid #30465f;
+ border-radius:6px;padding:8px;font-size:12px
 }
-#panel{
- position:absolute;z-index:1000;top:78px;right:12px;width:315px;max-height:calc(100vh - 95px);
- overflow:auto;background:rgba(10,18,31,.96);border:1px solid #26344b;border-radius:12px;
- padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.4)
+.top{
+ position:absolute;z-index:1000;top:10px;right:10px;left:10px;min-height:54px;
+ background:rgba(8,17,31,.94);border:1px solid #263951;border-radius:12px;
+ display:flex;align-items:center;gap:7px;padding:7px 9px;box-shadow:0 8px 30px #0008
 }
-.section{border-bottom:1px solid #27364d;padding-bottom:12px;margin-bottom:12px}
+.logo{display:flex;align-items:center;gap:8px;margin-left:auto;font-weight:bold;color:#8bdcff;font-size:16px}
+.logoIcon{
+ width:34px;height:34px;border-radius:9px;background:#0b4969;display:flex;
+ align-items:center;justify-content:center;font-size:20px
+}
+.iconBtn{font-size:18px;padding:7px 10px}
+#sidebar{
+ position:absolute;z-index:1001;right:10px;top:75px;width:330px;bottom:10px;
+ background:rgba(9,18,31,.97);border:1px solid #263951;border-radius:12px;
+ box-shadow:0 10px 35px #0009;overflow:hidden;display:flex;flex-direction:column
+}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tab{
+ flex:1;padding:11px 5px;text-align:center;font-size:12px;cursor:pointer;color:var(--muted)
+}
+.tab.active{color:#8bdcff;border-bottom:2px solid var(--accent);background:#102238}
+.content{padding:12px;overflow:auto}
+.section{margin-bottom:15px;padding-bottom:13px;border-bottom:1px solid #24354b}
 .section:last-child{border-bottom:0}
-.section h3{font-size:14px;color:#7dd3fc;margin:4px 0 10px}
-.layer{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:13px}
-.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
-.coords{position:absolute;z-index:1000;bottom:10px;right:10px;background:rgba(10,18,31,.9);
-padding:7px 10px;border-radius:7px;font-size:11px;border:1px solid #26344b}
-.legendRow{display:flex;align-items:center;gap:7px;margin:6px 0;font-size:12px}
-.info{
- position:absolute;z-index:1001;bottom:40px;left:10px;right:auto;width:360px;
- max-height:45vh;overflow:auto;background:rgba(10,18,31,.97);border:1px solid #33445e;
- border-radius:10px;padding:12px;display:none
+.sectionTitle{font-size:13px;color:#9edff8;font-weight:bold;margin-bottom:9px}
+.layer{
+ display:flex;align-items:center;gap:7px;padding:8px;border-radius:7px;
+ font-size:12px;cursor:pointer
 }
-.info h3{margin:0 0 10px;color:#7dd3fc}
-.attrTable{width:100%;border-collapse:collapse;font-size:11px;direction:rtl}
-.attrTable td{border:1px solid #33445e;padding:6px;vertical-align:top}
-.attrTable td:first-child{color:#93c5fd;width:38%}
-.searchBox{display:flex;gap:5px}
-.searchBox input{width:100%}
-.small{font-size:10px;color:#94a3b8;line-height:1.8}
-#measureResult{color:#fbbf24;font-size:12px;margin-top:7px}
-#coordResult{color:#86efac;font-size:12px;margin-top:7px;line-height:1.8}
-#featureCount{color:#cbd5e1;font-size:11px}
+.layer:hover{background:#122239}
+.layer input{width:auto}
+.swatch{width:11px;height:11px;border-radius:3px;display:inline-block}
+.layerCount{margin-right:auto;color:#71879f;font-size:10px}
+.fileRow{display:flex;gap:6px;flex-wrap:wrap}
+.fileLabel{
+ display:inline-block;background:#16263b;color:#e8eef7;border:1px solid #30465f;
+ border-radius:7px;padding:8px 9px;font-size:11px;cursor:pointer
+}
+.fileLabel:hover{background:#1c3652}
 .fileLabel input{display:none}
-.leaflet-control-layers{display:none}
-.leaflet-popup-content{direction:rtl;text-align:right}
-.popupTable{border-collapse:collapse;font-size:11px;max-width:280px}
-.popupTable td{border:1px solid #ccc;padding:4px}
-@media(max-width:700px){
- .topbar{top:6px;right:6px;left:6px;overflow-x:auto;white-space:nowrap}
- .title{font-size:13px}
- #panel{top:65px;right:6px;width:285px;max-height:70vh}
- .info{left:6px;bottom:35px;width:calc(100% - 12px);max-height:38vh}
+.small{font-size:10px;line-height:1.9;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.row{display:flex;gap:6px}
+.row>*{flex:1}
+#tablePanel{
+ position:absolute;z-index:999;left:10px;right:360px;bottom:10px;height:245px;
+ background:rgba(8,17,30,.97);border:1px solid #2a3d56;border-radius:11px;
+ box-shadow:0 8px 30px #0009;display:none;overflow:hidden
+}
+.tableHead{
+ height:43px;display:flex;align-items:center;padding:7px 10px;border-bottom:1px solid #2a3d56;
+ background:#0d1a2b
+}
+.tableHead strong{color:#8bdcff;font-size:12px;margin-left:auto}
+.tableHead button{padding:5px 8px}
+.tableWrap{height:calc(100% - 43px);overflow:auto}
+table{border-collapse:collapse;width:100%;font-size:11px;direction:rtl}
+th,td{border:1px solid #263951;padding:7px;white-space:nowrap;text-align:right}
+th{position:sticky;top:0;background:#14263d;color:#9edff8}
+tr:hover td{background:#122238}
+#infoCard{
+ position:absolute;z-index:1002;left:10px;top:75px;width:350px;max-height:48vh;
+ overflow:auto;background:rgba(8,17,30,.97);border:1px solid #2a3d56;border-radius:11px;
+ padding:12px;display:none;box-shadow:0 8px 30px #0009
+}
+.infoTitle{display:flex;align-items:center;margin-bottom:9px}
+.infoTitle b{margin-left:auto;color:#8bdcff}
+.coordBar{
+ position:absolute;z-index:1000;bottom:265px;left:10px;background:#0a1524eF;
+ border:1px solid #263951;border-radius:7px;padding:6px 9px;font-size:10px;color:#b8c9da
+}
+.status{
+ position:absolute;z-index:1000;bottom:10px;left:50%;transform:translateX(-50%);
+ background:#091522eF;border:1px solid #263951;border-radius:7px;padding:6px 10px;
+ color:#9fb2c8;font-size:10px
+}
+.leaflet-control-zoom{margin-top:78px!important}
+.leaflet-control-attribution{font-size:9px}
+.legend{
+ position:absolute;z-index:998;bottom:275px;right:20px;background:#091522eF;
+ border:1px solid #263951;border-radius:8px;padding:9px 11px;font-size:10px;
+ min-width:125px
+}
+.legendTitle{color:#8bdcff;margin-bottom:6px;font-weight:bold}
+.legendRow{display:flex;gap:6px;align-items:center;margin:5px 0}
+.measureBox{margin-top:7px;color:#ffd166;font-size:11px}
+.searchResults{margin-top:7px;max-height:150px;overflow:auto}
+.result{
+ padding:7px;border:1px solid #273b53;border-radius:6px;margin:4px 0;cursor:pointer;font-size:11px
+}
+.result:hover{background:#13263d}
+.hidden{display:none!important}
+@media(max-width:850px){
+ #sidebar{width:290px;right:6px;top:65px;bottom:auto;max-height:72vh}
+ #tablePanel{left:6px;right:6px;bottom:6px;height:210px}
+ #infoCard{left:6px;top:65px;width:calc(100% - 12px);max-height:35vh}
+ .coordBar{bottom:225px;left:6px}
+ .legend{right:6px;bottom:225px}
+ .logo{font-size:12px}
+ .top{overflow-x:auto}
 }
 </style>
 </head>
 
 <body>
-
 <div id="map"></div>
 
-<div class="topbar">
- <div class="title">⚡ WebGIS صنعت برق</div>
- <button onclick="togglePanel()">☰ مدیریت</button>
- <button onclick="locateMe()">📍 موقعیت من</button>
- <button onclick="clearImported()">🗑 پاکسازی ورود</button>
+<div class="top">
+ <div class="logo"><div class="logoIcon">⚡</div>WebGIS شبکه برق</div>
+ <button class="iconBtn" onclick="toggleSidebar()" title="مدیریت">☰</button>
+ <button class="iconBtn" onclick="toggleTable()" title="جدول مشخصات">▦</button>
+ <button class="iconBtn" onclick="locateUser()" title="موقعیت من">📍</button>
+ <button class="iconBtn" onclick="printMap()" title="چاپ">🖨</button>
 </div>
 
-<div id="panel">
+<div id="sidebar">
+ <div class="tabs">
+  <div class="tab active" onclick="showTab('layers',this)">لایه‌ها</div>
+  <div class="tab" onclick="showTab('tools',this)">ابزارها</div>
+  <div class="tab" onclick="showTab('data',this)">ورود داده</div>
+ </div>
 
-<div class="section">
-<h3>🗺 نقشه پایه</h3>
-<select id="basemapSelect" style="width:100%" onchange="changeBasemap(this.value)">
-<option value="osm">OpenStreetMap</option>
-<option value="esri">Esri Satellite</option>
-<option value="google">Google</option>
-<option value="googleSat">Google Satellite</option>
-<option value="dark">Dark GIS</option>
-</select>
+ <div id="layersTab" class="content">
+  <div class="section">
+   <div class="sectionTitle">🗺 نقشه پایه</div>
+   <select id="basemap" onchange="setBasemap(this.value)">
+    <option value="osm">OpenStreetMap</option>
+    <option value="google">Google Maps</option>
+    <option value="googleSat">Google Satellite</option>
+    <option value="esri">Esri Satellite</option>
+    <option value="dark">Dark GIS</option>
+   </select>
+  </div>
+
+  <div class="section">
+   <div class="sectionTitle">⚡ لایه‌های اصلی شبکه برق</div>
+
+   <label class="layer"><input type="checkbox" data-layer="line" checked onchange="setLayerVisible('line',this.checked)">
+   <span class="swatch" style="background:#ef4444"></span>خطوط انتقال و فوق‌توزیع <span id="count-line" class="layerCount"></span></label>
+
+   <label class="layer"><input type="checkbox" data-layer="post" checked onchange="setLayerVisible('post',this.checked)">
+   <span class="swatch" style="background:#f59e0b"></span>پست‌ها <span id="count-post" class="layerCount"></span></label>
+
+   <label class="layer"><input type="checkbox" data-layer="county" checked onchange="setLayerVisible('county',this.checked)">
+   <span class="swatch" style="background:#22c55e"></span>شهرستان‌ها <span id="count-county" class="layerCount"></span></label>
+
+   <label class="layer"><input type="checkbox" data-layer="plant" checked onchange="setLayerVisible('plant',this.checked)">
+   <span class="swatch" style="background:#a855f7"></span>نیروگاه‌ها <span id="count-plant" class="layerCount"></span></label>
+
+   <label class="layer"><input type="checkbox" data-layer="tower" checked onchange="setLayerVisible('tower',this.checked)">
+   <span class="swatch" style="background:#06b6d4"></span>دکل‌ها <span id="count-tower" class="layerCount"></span></label>
+
+   <label class="layer"><input type="checkbox" data-layer="dg" checked onchange="setLayerVisible('dg',this.checked)">
+   <span class="swatch" style="background:#84cc16"></span>DG <span id="count-dg" class="layerCount"></span></label>
+  </div>
+
+  <div class="section">
+   <div class="sectionTitle">🔎 جستجو در عوارض</div>
+   <div class="row">
+    <input id="searchInput" placeholder="نام، کد، نوع و...">
+    <button class="primary" onclick="searchAll()">جستجو</button>
+   </div>
+   <div id="searchResults" class="searchResults"></div>
+  </div>
+ </div>
+
+ <div id="toolsTab" class="content hidden">
+  <div class="section">
+   <div class="sectionTitle">📏 اندازه‌گیری</div>
+   <div class="grid2">
+    <button onclick="measureLine()">📏 طول</button>
+    <button onclick="measurePolygon()">⬡ مساحت</button>
+   </div>
+   <button style="width:100%;margin-top:6px" onclick="clearMeasure()">پاک کردن اندازه‌گیری</button>
+   <div id="measureResult" class="measureBox"></div>
+  </div>
+
+  <div class="section">
+   <div class="sectionTitle">📍 رفتن به مختصات</div>
+   <select id="coordType" onchange="coordMode()">
+    <option value="utm">UTM</option>
+    <option value="dms">DMS</option>
+    <option value="decimal">Decimal Degree</option>
+   </select>
+
+   <div id="utmBox" style="margin-top:7px">
+    <div class="grid2">
+     <input id="zone" placeholder="Zone (مثلاً 39)">
+     <select id="hemisphere"><option value="N">شمالی</option><option value="S">جنوبی</option></select>
+    </div>
+    <input id="easting" style="margin-top:6px" placeholder="Easting">
+    <input id="northing" style="margin-top:6px" placeholder="Northing">
+   </div>
+
+   <div id="dmsBox" class="hidden" style="margin-top:7px">
+    <input id="latDms" placeholder="Lat: 29°36'00&quot;N">
+    <input id="lonDms" style="margin-top:6px" placeholder="Lon: 52°32'00&quot;E">
+   </div>
+
+   <div id="decimalBox" class="hidden" style="margin-top:7px">
+    <input id="latDec" placeholder="Latitude">
+    <input id="lonDec" style="margin-top:6px" placeholder="Longitude">
+   </div>
+
+   <button class="primary" style="width:100%;margin-top:7px" onclick="goToCoordinate()">📍 نمایش روی نقشه</button>
+   <div id="coordResult" class="small"></div>
+  </div>
+
+  <div class="section">
+   <div class="sectionTitle">🧭 ابزارهای سریع</div>
+   <div class="grid2">
+    <button onclick="zoomFull()">نمای کلی</button>
+    <button onclick="clearImported()">پاک کردن ورودی‌ها</button>
+   </div>
+  </div>
+ </div>
+
+ <div id="dataTab" class="content hidden">
+  <div class="section">
+   <div class="sectionTitle">📂 ورود داده مکانی</div>
+   <div class="fileRow">
+    <label class="fileLabel">GeoJSON / JSON
+     <input type="file" accept=".geojson,.json" onchange="importGeoJSON(this)">
+    </label>
+    <label class="fileLabel">KML
+     <input type="file" accept=".kml" onchange="importKML(this)">
+    </label>
+    <label class="fileLabel">SHP
+     <input type="file" accept=".shp,.zip" onchange="importSHP(this)">
+    </label>
+   </div>
+   <p class="small">
+    فایل SHP بهتر است به‌صورت ZIP شامل SHP، SHX، DBF و PRJ وارد شود.
+    داده‌های واردشده با رنگ زرد روی نقشه نمایش داده می‌شوند.
+   </p>
+  </div>
+
+  <div class="section">
+   <div class="sectionTitle">📥 خروجی</div>
+   <button style="width:100%" onclick="exportImported()">دانلود داده‌های واردشده به GeoJSON</button>
+  </div>
+
+  <div class="section">
+   <div class="sectionTitle">📁 ساختار لایه‌های اصلی</div>
+   <div class="small">
+    برای لایه‌های دائمی، این فایل‌ها را در پوشه <b>data</b> کنار index.html قرار دهید:
+    <br>line.geojson
+    <br>post.geojson
+    <br>shahrestan.geojson
+    <br>powerplant.geojson
+    <br>tower.geojson
+    <br>dg.geojson
+   </div>
+  </div>
+ </div>
 </div>
 
-<div class="section">
-<h3>⚡ مدیریت لایه‌های شبکه برق</h3>
+<div id="infoCard"></div>
 
-<label class="layer"><input type="checkbox" checked onchange="toggleLayer('line',this.checked)"> <span class="dot" style="background:#ef4444"></span> خط انتقال و فوق‌توزیع</label>
-<label class="layer"><input type="checkbox" checked onchange="toggleLayer('post',this.checked)"> <span class="dot" style="background:#f59e0b"></span> پست</label>
-<label class="layer"><input type="checkbox" checked onchange="toggleLayer('county',this.checked)"> <span class="dot" style="background:#22c55e"></span> شهرستان</label>
-<label class="layer"><input type="checkbox" checked onchange="toggleLayer('plant',this.checked)"> <span class="dot" style="background:#a855f7"></span> نیروگاه</label>
-<label class="layer"><input type="checkbox" checked onchange="toggleLayer('tower',this.checked)"> <span class="dot" style="background:#06b6d4"></span> دکل</label>
-<label class="layer"><input type="checkbox" checked onchange="toggleLayer('dg',this.checked)"> <span class="dot" style="background:#84cc16"></span> DG</label>
-
-<div id="featureCount">برای اتصال لایه‌های واقعی، فایل GeoJSON هر لایه را در پوشه data قرار دهید.</div>
+<div id="tablePanel">
+ <div class="tableHead">
+  <strong id="tableTitle">جدول مشخصات</strong>
+  <button onclick="exportCurrentTable()">خروجی GeoJSON</button>
+  <button onclick="toggleTable()">✕</button>
+ </div>
+ <div class="tableWrap"><table id="attributeTable"></table></div>
 </div>
 
-<div class="section">
-<h3>📂 ورود داده</h3>
-<label class="fileLabel">➕ KML / KMZ / GeoJSON / JSON
-<input type="file" id="dataFile" accept=".kml,.kmz,.geojson,.json" onchange="importData(this)">
-</label>
-<br><br>
-<label class="fileLabel">➕ SHP
-<input type="file" id="shpFiles" accept=".shp,.dbf,.shx,.prj,.cpg" multiple onchange="importShp(this)">
-</label>
-<p class="small">برای SHP بهتر است فایل‌های SHP، SHX و DBF و در صورت وجود PRJ را همزمان انتخاب کنید.</p>
+<div id="legend" class="legend">
+ <div class="legendTitle">راهنمای نقشه</div>
+ <div class="legendRow"><span class="swatch" style="background:#ef4444"></span>خط</div>
+ <div class="legendRow"><span class="swatch" style="background:#f59e0b"></span>پست</div>
+ <div class="legendRow"><span class="swatch" style="background:#22c55e"></span>شهرستان</div>
+ <div class="legendRow"><span class="swatch" style="background:#a855f7"></span>نیروگاه</div>
+ <div class="legendRow"><span class="swatch" style="background:#06b6d4"></span>دکل</div>
+ <div class="legendRow"><span class="swatch" style="background:#84cc16"></span>DG</div>
+ <div class="legendRow"><span class="swatch" style="background:#fbbf24"></span>داده واردشده</div>
 </div>
 
-<div class="section">
-<h3>📏 اندازه‌گیری</h3>
-<button onclick="startLength()">اندازه‌گیری طول</button>
-<button onclick="startArea()">اندازه‌گیری مساحت</button>
-<button onclick="clearMeasure()">پاک کردن</button>
-<div id="measureResult"></div>
-</div>
-
-<div class="section">
-<h3>📍 رفتن به مختصات</h3>
-<select id="coordType" style="width:100%;margin-bottom:6px">
-<option value="utm">UTM</option>
-<option value="dms">DMS</option>
-<option value="decimal">Lat / Lon</option>
-</select>
-<div id="utmInputs">
-<input id="utmZone" placeholder="Zone مثال 39" style="width:30%">
-<input id="utmE" placeholder="Easting" style="width:32%">
-<input id="utmN" placeholder="Northing" style="width:32%">
-</div>
-<div id="dmsInputs" style="display:none">
-<input id="dLat" placeholder="Lat: 29°36'00&quot;N" style="width:100%;margin-bottom:5px">
-<input id="dLon" placeholder="Lon: 52°32'00&quot;E" style="width:100%">
-</div>
-<div id="decInputs" style="display:none">
-<input id="decLat" placeholder="Latitude" style="width:49%">
-<input id="decLon" placeholder="Longitude" style="width:49%">
-</div>
-<br>
-<button onclick="goCoordinate()">📍 برو</button>
-<div id="coordResult"></div>
-</div>
-
-<div class="section">
-<h3>🔎 جستجوی عوارض</h3>
-<div class="searchBox">
-<input id="searchText" placeholder="مثلاً نام پست یا نیروگاه">
-<button onclick="searchFeatures()">جستجو</button>
-</div>
-</div>
-
-<div class="section">
-<h3>📌 راهنما</h3>
-<div class="small">
-با کلیک روی هر عارضه، اطلاعات توصیفی آن نمایش داده می‌شود.
-<br>برای افزودن لایه‌های واقعی، فایل‌های GeoJSON خود را در مسیر data قرار دهید و نام فایل را مطابق کد تنظیم کنید.
-</div>
-</div>
-
-</div>
-
-<div id="info" class="info"></div>
-<div id="coords" class="coords">مختصات: -</div>
+<div id="coordBar">Lat: - | Lon: -</div>
+<div id="status" class="status">در حال آماده‌سازی WebGIS...</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
@@ -183,350 +317,362 @@ padding:7px 10px;border-radius:7px;font-size:11px;border:1px solid #26344b}
 <script>
 const map=L.map('map',{zoomControl:true}).setView([29.60,52.50],7);
 
-const basemaps={};
-basemaps.osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'});
-basemaps.esri=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri'});
-basemaps.google=L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{attribution:'© Google'});
-basemaps.googleSat=L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{attribution:'© Google'});
-basemaps.dark=L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO'});
-basemaps.osm.addTo(map);
+const base={
+ osm:L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}),
+ google:L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{maxZoom:20,attribution:'© Google'}),
+ googleSat:L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{maxZoom:20,attribution:'© Google'}),
+ esri:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'© Esri'}),
+ dark:L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:20,attribution:'© CARTO'})
+};
+base.osm.addTo(map);
 
-const layerStyles={
- line:{color:'#ef4444',weight:3},
- post:{color:'#f59e0b',radius:7,fillOpacity:.85},
- county:{color:'#22c55e',weight:2,fillOpacity:.08},
- plant:{color:'#a855f7',radius:8,fillOpacity:.9},
- tower:{color:'#06b6d4',radius:5,fillOpacity:.9},
- dg:{color:'#84cc16',radius:6,fillOpacity:.9}
+const config={
+ line:{file:'data/line.geojson',color:'#ef4444',type:'line',name:'خطوط انتقال و فوق‌توزیع'},
+ post:{file:'data/post.geojson',color:'#f59e0b',type:'point',name:'پست‌ها'},
+ county:{file:'data/shahrestan.geojson',color:'#22c55e',type:'polygon',name:'شهرستان‌ها'},
+ plant:{file:'data/powerplant.geojson',color:'#a855f7',type:'point',name:'نیروگاه‌ها'},
+ tower:{file:'data/tower.geojson',color:'#06b6d4',type:'point',name:'دکل‌ها'},
+ dg:{file:'data/dg.geojson',color:'#84cc16',type:'point',name:'DG'}
 };
 
-const layers={};
-const files={
- line:'data/line.geojson',
- post:'data/post.geojson',
- county:'data/shahrestan.geojson',
- plant:'data/powerplant.geojson',
- tower:'data/tower.geojson',
- dg:'data/dg.geojson'
-};
-
+const layerGroups={};
 const imported=L.featureGroup().addTo(map);
-const drawnItems=new L.FeatureGroup().addTo(map);
-
-function featurePopup(properties){
- let html='<table class="popupTable">';
- if(properties){
-  Object.keys(properties).forEach(k=>{
-   let v=properties[k];
-   if(typeof v==='object')v=JSON.stringify(v);
-   html+=`<tr><td><b>${escapeHtml(k)}</b></td><td>${escapeHtml(String(v??''))}</td></tr>`;
-  });
- }
- html+='</table>';
- return html;
-}
+const measureGroup=new L.FeatureGroup().addTo(map);
+let lastSelectedLayer=null;
+let lastSelectedFeature=null;
+let userMarker=null;
 
 function escapeHtml(s){
- return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+ return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 }
 
-function styleFor(type){
- const s=layerStyles[type];
- return s;
+function featureStyle(c){
+ return {color:c,weight:3,fillColor:c,fillOpacity:.10};
 }
 
-async function loadLayer(type){
- try{
-  const r=await fetch(files[type]);
-  if(!r.ok) throw new Error(r.status);
-  const geo=await r.json();
+function pointStyle(c){
+ return {radius:7,color:c,fillColor:c,fillOpacity:.9,weight:2};
+}
 
-  layers[type]=L.geoJSON(geo,{
-   style: type==='line'||type==='county' ? styleFor(type) : undefined,
-   pointToLayer:(f,ll)=>{
-    const s=styleFor(type);
-    return L.circleMarker(ll,s);
-   },
+function popupHTML(props){
+ let h='<table class="popupTable">';
+ Object.entries(props||{}).forEach(([k,v])=>{
+  if(typeof v==='object')v=JSON.stringify(v);
+  h+=`<tr><td><b>${escapeHtml(k)}</b></td><td>${escapeHtml(v)}</td></tr>`;
+ });
+ return h+'</table>';
+}
+
+function showFeature(type,feature,layer){
+ lastSelectedLayer=layer;
+ lastSelectedFeature=feature;
+ const props=feature.properties||{};
+ let h=`<div class="infoTitle"><b>${escapeHtml(config[type]?.name||type)}</b><button onclick="closeInfo()">✕</button></div>`;
+ h+=popupHTML(props);
+ h+='<div style="margin-top:8px"><button onclick="openAttributeTable()">▦ جدول مشخصات</button></div>';
+ document.getElementById('infoCard').innerHTML=h;
+ document.getElementById('infoCard').style.display='block';
+ openAttributeTable();
+}
+
+function closeInfo(){document.getElementById('infoCard').style.display='none'}
+
+function openAttributeTable(){
+ if(!lastSelectedFeature)return;
+ const p=lastSelectedFeature.properties||{};
+ const t=document.getElementById('attributeTable');
+ const keys=Object.keys(p);
+ t.innerHTML='<thead><tr>'+keys.map(k=>`<th>${escapeHtml(k)}</th>`).join('')+'</tr></thead>'+
+ '<tbody><tr>'+keys.map(k=>`<td>${escapeHtml(typeof p[k]==='object'?JSON.stringify(p[k]):p[k])}</td>`).join('')+'</tr></tbody>';
+ document.getElementById('tableTitle').innerText='جدول مشخصات عارضه';
+ document.getElementById('tablePanel').style.display='block';
+}
+
+function buildLayer(type){
+ const c=config[type];
+ fetch(c.file).then(r=>{
+  if(!r.ok)throw new Error('not found');
+  return r.json();
+ }).then(geo=>{
+  const group=L.geoJSON(geo,{
+   style:()=>featureStyle(c.color),
+   pointToLayer:(f,ll)=>L.circleMarker(ll,pointStyle(c.color)),
    onEachFeature:(f,l)=>{
-    l.on('click',()=>showInfo(type,f.properties||{}));
-    l.bindPopup(featurePopup(f.properties||{}));
+    l.bindPopup(popupHTML(f.properties||{}),{maxWidth:360});
+    l.on('click',()=>showFeature(type,f,l));
    }
   }).addTo(map);
-
-  updateCount();
- }catch(e){
-  // لایه‌ای که هنوز فایل آن وجود ندارد، خطا را در صفحه نمایش نمی‌دهد.
- }
-}
-
-Object.keys(files).forEach(loadLayer);
-
-function toggleLayer(type,on){
- if(!layers[type])return;
- if(on) layers[type].addTo(map);
- else map.removeLayer(layers[type]);
-}
-
-function updateCount(){
- let n=0;
- Object.values(layers).forEach(l=>{
-  if(l&&l.getLayers)n+=l.getLayers().length;
+  layerGroups[type]=group;
+  document.getElementById('count-'+type).innerText=group.getLayers().length;
+  setStatus(c.name+' بارگذاری شد');
+ }).catch(()=>{
+  document.getElementById('count-'+type).innerText='—';
  });
- document.getElementById('featureCount').innerText='تعداد عوارض بارگذاری‌شده: '+n;
 }
 
-function showInfo(type,p){
- const box=document.getElementById('info');
- let html=`<h3>📋 مشخصات عارضه — ${type}</h3>`;
- html+='<table class="attrTable">';
- Object.keys(p).forEach(k=>{
-  let v=p[k];
-  if(typeof v==='object')v=JSON.stringify(v);
-  html+=`<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(String(v??''))}</td></tr>`;
- });
- html+='</table>';
- if(Object.keys(p).length===0)html+='<div class="small">اطلاعات توصیفی برای این عارضه وجود ندارد.</div>';
- html+='<br><button onclick="document.getElementById(\'info\').style.display=\'none\'">بستن</button>';
- box.innerHTML=html;
- box.style.display='block';
+Object.keys(config).forEach(buildLayer);
+
+function setLayerVisible(type,on){
+ const g=layerGroups[type];
+ if(!g)return;
+ if(on)g.addTo(map);else map.removeLayer(g);
 }
 
-function changeBasemap(v){
- Object.values(basemaps).forEach(b=>map.removeLayer(b));
- basemaps[v].addTo(map);
+function setBasemap(v){
+ Object.values(base).forEach(x=>map.removeLayer(x));
+ base[v].addTo(map);
 }
 
-function togglePanel(){
- const p=document.getElementById('panel');
- p.style.display=p.style.display==='none'?'block':'none';
+function setStatus(s){document.getElementById('status').innerText=s}
+function toggleSidebar(){
+ const x=document.getElementById('sidebar');
+ x.style.display=x.style.display==='none'?'flex':'none';
+}
+function toggleTable(){
+ const x=document.getElementById('tablePanel');
+ x.style.display=x.style.display==='none'?'block':'none';
+}
+function showTab(tab,el){
+ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+ el.classList.add('active');
+ ['layers','tools','data'].forEach(x=>document.getElementById(x+'Tab').classList.add('hidden'));
+ document.getElementById(tab+'Tab').classList.remove('hidden');
 }
 
 map.on('mousemove',e=>{
- document.getElementById('coords').innerText=
- 'مختصات: '+e.latlng.lat.toFixed(6)+' , '+e.latlng.lng.toFixed(6);
+ document.getElementById('coordBar').innerText='Lat: '+e.latlng.lat.toFixed(6)+' | Lon: '+e.latlng.lng.toFixed(6);
 });
 
-map.on('click',()=>document.getElementById('info').style.display='none');
-
-const drawControl=new L.Control.Draw({
- edit:{featureGroup:drawnItems},
- draw:{
-  polygon:true,polyline:true,rectangle:false,circle:false,
-  marker:false,circlemarker:false
- }
+const draw=new L.Control.Draw({
+ position:'topleft',
+ edit:{featureGroup:measureGroup},
+ draw:{polygon:false,polyline:false,rectangle:false,circle:false,marker:false,circlemarker:false}
 });
-map.addControl(drawControl);
+map.addControl(draw);
 
-map.on(L.Draw.Event.CREATED,e=>{
- drawnItems.addLayer(e.layer);
- const layer=e.layer;
- if(e.layerType==='polyline'){
-  const meters=calcLine(layer.getLatLngs());
-  document.getElementById('measureResult').innerText='طول: '+formatDistance(meters);
- }
- if(e.layerType==='polygon'){
-  const area=calcArea(layer.getLatLngs()[0]);
-  document.getElementById('measureResult').innerText='مساحت: '+formatArea(area);
- }
-});
-
-function calcLine(latlngs){
- let total=0;
- for(let i=1;i<latlngs.length;i++)total+=map.distance(latlngs[i-1],latlngs[i]);
- return total;
+function measureLine(){
+ clearMeasure();
+ const d=new L.Draw.Polyline(map,{shapeOptions:{color:'#fbbf24',weight:4}});
+ d.enable();
+ map.once(L.Draw.Event.CREATED,e=>{
+  measureGroup.addLayer(e.layer);
+  const pts=e.layer.getLatLngs();
+  let m=0;
+  for(let i=1;i<pts.length;i++)m+=map.distance(pts[i-1],pts[i]);
+  document.getElementById('measureResult').innerText='طول: '+formatDistance(m);
+ });
 }
-
-function calcArea(points){
- let area=0;
- const R=6378137;
- for(let i=0,j=points.length-1;i<points.length;j=i++){
-  const p1=points[i],p2=points[j];
-  area+=(p2.lng-p1.lng)*Math.PI/180*
-    (2+Math.sin(p1.lat*Math.PI/180)+Math.sin(p2.lat*Math.PI/180));
- }
- return Math.abs(area*R*R/2);
-}
-
-function formatDistance(m){
- return m<1000?m.toFixed(2)+' متر':(m/1000).toFixed(3)+' کیلومتر';
-}
-function formatArea(a){
- return a<10000?a.toFixed(2)+' مترمربع':(a/10000).toFixed(3)+' هکتار';
-}
-function startLength(){
- new L.Draw.Polyline(map,{shapeOptions:{color:'#fbbf24',weight:4}}).enable();
-}
-function startArea(){
- new L.Draw.Polygon(map,{shapeOptions:{color:'#fbbf24',fillOpacity:.15}}).enable();
+function measurePolygon(){
+ clearMeasure();
+ const d=new L.Draw.Polygon(map,{shapeOptions:{color:'#fbbf24',fillColor:'#fbbf24',fillOpacity:.15}});
+ d.enable();
+ map.once(L.Draw.Event.CREATED,e=>{
+  measureGroup.addLayer(e.layer);
+  const pts=e.layer.getLatLngs()[0];
+  const a=areaMeters(pts);
+  document.getElementById('measureResult').innerText='مساحت: '+formatArea(a);
+ });
 }
 function clearMeasure(){
- drawnItems.clearLayers();
+ measureGroup.clearLayers();
  document.getElementById('measureResult').innerText='';
 }
+function formatDistance(m){return m<1000?m.toFixed(2)+' متر':(m/1000).toFixed(3)+' کیلومتر'}
+function formatArea(a){return a<10000?a.toFixed(2)+' مترمربع':(a/10000).toFixed(3)+' هکتار'}
 
-document.getElementById('coordType').onchange=function(){
- document.getElementById('utmInputs').style.display=this.value==='utm'?'block':'none';
- document.getElementById('dmsInputs').style.display=this.value==='dms'?'block':'none';
- document.getElementById('decInputs').style.display=this.value==='decimal'?'block':'none';
-};
+function areaMeters(points){
+ const R=6378137;
+ let a=0;
+ for(let i=0,j=points.length-1;i<points.length;j=i++){
+  const p=points[i],q=points[j];
+  a+=(q.lng-p.lng)*Math.PI/180*(2+Math.sin(p.lat*Math.PI/180)+Math.sin(q.lat*Math.PI/180));
+ }
+ return Math.abs(a*R*R/2);
+}
 
-function utmToLatLon(easting,northing,zone,hemisphere='N'){
- const a=6378137, eccSquared=0.00669438, k0=0.9996;
- const x=easting-500000;
- let y=northing;
- if(hemisphere==='S')y-=10000000;
- const eccPrimeSquared=eccSquared/(1-eccSquared);
- const M=y/k0;
- const mu=M/(a*(1-eccSquared/4-3*eccSquared**2/64-5*eccSquared**3/256));
- const e1=(1-Math.sqrt(1-eccSquared))/(1+Math.sqrt(1-eccSquared));
- const J1=3*e1/2-27*e1**3/32;
- const J2=21*e1**2/16-55*e1**4/32;
- const J3=151*e1**3/96;
- const J4=1097*e1**4/512;
- const fp=mu+J1*Math.sin(2*mu)+J2*Math.sin(4*mu)+J3*Math.sin(6*mu)+J4*Math.sin(8*mu);
- const N1=a/Math.sqrt(1-eccSquared*Math.sin(fp)**2);
- const T1=Math.tan(fp)**2;
- const C1=eccPrimeSquared*Math.cos(fp)**2;
- const R1=a*(1-eccSquared)/Math.pow(1-eccSquared*Math.sin(fp)**2,1.5);
- const D=x/(N1*k0);
- let lat=fp-(N1*Math.tan(fp)/R1)*(D**2/2-(5+3*T1+10*C1-4*C1**2-9*eccPrimeSquared)*D**4/24+
- (61+90*T1+298*C1+45*T1**2-252*eccPrimeSquared-3*C1**2)*D**6/720);
- let lon=(D-(1+2*T1+C1)*D**3/6+(5-2*C1+28*T1-3*C1**2+8*eccPrimeSquared+24*T1**2)*D**5/120)/Math.cos(fp);
+function utmToLatLon(E,N,zone,hem){
+ const a=6378137,ecc=0.00669438,k0=.9996;
+ let x=E-500000,y=N;
+ if(hem==='S')y-=10000000;
+ const ep=ecc/(1-ecc);
+ const M=y/k0,mu=M/(a*(1-ecc/4-3*ecc**2/64-5*ecc**3/256));
+ const e1=(1-Math.sqrt(1-ecc))/(1+Math.sqrt(1-ecc));
+ const j1=3*e1/2-27*e1**3/32,j2=21*e1**2/16-55*e1**4/32;
+ const j3=151*e1**3/96,j4=1097*e1**4/512;
+ const fp=mu+j1*Math.sin(2*mu)+j2*Math.sin(4*mu)+j3*Math.sin(6*mu)+j4*Math.sin(8*mu);
+ const N1=a/Math.sqrt(1-ecc*Math.sin(fp)**2),T1=Math.tan(fp)**2,C1=ep*Math.cos(fp)**2;
+ const R1=a*(1-ecc)/Math.pow(1-ecc*Math.sin(fp)**2,1.5),D=x/(N1*k0);
+ let lat=fp-(N1*Math.tan(fp)/R1)*(D**2/2-(5+3*T1+10*C1-4*C1**2-9*ep)*D**4/24+
+ (61+90*T1+298*C1+45*T1**2-252*ep-3*C1**2)*D**6/720);
+ let lon=(D-(1+2*T1+C1)*D**3/6+(5-2*C1+28*T1-3*C1**2+8*ep+24*T1**2)*D**5/120)/Math.cos(fp);
  lon=(zone-1)*6-180+3+lon*180/Math.PI;
- lat=lat*180/Math.PI;
+ lat*=180/Math.PI;
  return [lat,lon];
 }
 
-function parseDMS(v){
- v=v.trim().replace(/°/g,' ').replace(/'/g,' ').replace(/"/g,' ');
- const p=v.split(/\s+/).filter(Boolean);
- if(p.length<3)return NaN;
- let deg=parseFloat(p[0]),min=parseFloat(p[1]),sec=parseFloat(p[2]);
- let sign=deg<0?-1:1;
- let last=v.toUpperCase();
- if(/[SW]$/.test(last))sign=-1;
- if(/[NE]$/.test(last))sign=1;
- return sign*(Math.abs(deg)+min/60+sec/3600);
+function dmsToDecimal(v){
+ v=v.trim();
+ const hemi=v.toUpperCase().match(/[NSEW]$/)?.[0]||'';
+ const nums=v.replace(/[NSEW]/gi,'').replace(/°/g,' ').replace(/'/g,' ').replace(/"/g,' ').trim().split(/\s+/).map(Number);
+ if(nums.length<3||nums.some(isNaN))return NaN;
+ let val=Math.abs(nums[0])+nums[1]/60+nums[2]/3600;
+ if(hemi==='S'||hemi==='W')val=-val;
+ return val;
 }
 
-function goCoordinate(){
+function coordMode(){
+ const v=document.getElementById('coordType').value;
+ document.getElementById('utmBox').classList.toggle('hidden',v!=='utm');
+ document.getElementById('dmsBox').classList.toggle('hidden',v!=='dms');
+ document.getElementById('decimalBox').classList.toggle('hidden',v!=='decimal');
+}
+function goToCoordinate(){
  const type=document.getElementById('coordType').value;
  let lat,lon;
  try{
   if(type==='utm'){
-   const z=parseInt(document.getElementById('utmZone').value);
-   const e=parseFloat(document.getElementById('utmE').value);
-   const n=parseFloat(document.getElementById('utmN').value);
-   if(!z||isNaN(e)||isNaN(n))throw 0;
-   [lat,lon]=utmToLatLon(e,n,z,'N');
+   const z=Number(document.getElementById('zone').value);
+   const e=Number(document.getElementById('easting').value);
+   const n=Number(document.getElementById('northing').value);
+   if(z<1||z>60||!isFinite(e)||!isFinite(n))throw 1;
+   [lat,lon]=utmToLatLon(e,n,z,document.getElementById('hemisphere').value);
   }else if(type==='dms'){
-   lat=parseDMS(document.getElementById('dLat').value);
-   lon=parseDMS(document.getElementById('dLon').value);
+   lat=dmsToDecimal(document.getElementById('latDms').value);
+   lon=dmsToDecimal(document.getElementById('lonDms').value);
   }else{
-   lat=parseFloat(document.getElementById('decLat').value);
-   lon=parseFloat(document.getElementById('decLon').value);
+   lat=Number(document.getElementById('latDec').value);
+   lon=Number(document.getElementById('lonDec').value);
   }
-  if(!isFinite(lat)||!isFinite(lon))throw 0;
+  if(!isFinite(lat)||!isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)throw 1;
   map.setView([lat,lon],15);
-  L.marker([lat,lon]).addTo(map).bindPopup('مختصات مقصد').openPopup();
-  document.getElementById('coordResult').innerText=`Lat: ${lat.toFixed(6)} | Lon: ${lon.toFixed(6)}`;
- }catch(e){
-  document.getElementById('coordResult').innerText='مختصات واردشده صحیح نیست.';
- }
+  if(userMarker)map.removeLayer(userMarker);
+  userMarker=L.marker([lat,lon]).addTo(map).bindPopup('مختصات مقصد').openPopup();
+  document.getElementById('coordResult').innerText='Lat: '+lat.toFixed(6)+' | Lon: '+lon.toFixed(6);
+ }catch(e){document.getElementById('coordResult').innerText='مختصات واردشده صحیح نیست.'}
 }
 
-function locateMe(){
+function locateUser(){
  map.locate({setView:true,maxZoom:16,enableHighAccuracy:true});
 }
 map.on('locationfound',e=>{
- L.circleMarker(e.latlng,{radius:8,color:'#22c55e',fillOpacity:.8}).addTo(map)
- .bindPopup('موقعیت فعلی').openPopup();
+ if(userMarker)map.removeLayer(userMarker);
+ userMarker=L.circleMarker(e.latlng,{radius:8,color:'#22c55e',fillColor:'#22c55e',fillOpacity:.8}).addTo(map);
+ userMarker.bindPopup('موقعیت فعلی').openPopup();
 });
+map.on('locationerror',()=>setStatus('دسترسی به موقعیت مکانی امکان‌پذیر نیست.'));
 
-async function importData(input){
- const file=input.files[0];
- if(!file)return;
- try{
-  let geojson;
-  if(file.name.toLowerCase().endsWith('.kml')||file.name.toLowerCase().endsWith('.kmz')){
-   if(file.name.toLowerCase().endsWith('.kmz')){
-    alert('برای KMZ لطفاً ابتدا آن را به KML تبدیل کنید؛ نسخه فعلی ورود مستقیم KML را پشتیبانی می‌کند.');
-    return;
-   }
-   const text=await file.text();
-   const xml=new DOMParser().parseFromString(text,'text/xml');
-   geojson=toGeoJSON.kml(xml);
-  }else{
-   geojson=JSON.parse(await file.text());
-  }
-  addImportedGeoJSON(geojson,file.name);
- }catch(e){
-  alert('خطا در خواندن فایل: '+e.message);
- }
- input.value='';
-}
-
-async function importShp(input){
- const files=input.files;
- if(!files.length)return;
- try{
-  const arr=Array.from(files);
-  const shpFile=arr.find(f=>f.name.toLowerCase().endsWith('.shp'));
-  if(!shpFile)throw new Error('فایل SHP انتخاب نشده است.');
-
-  const buffer=await shpFile.arrayBuffer();
-  const geo=await shp(buffer);
-  addImportedGeoJSON(geo,shpFile.name);
- }catch(e){
-  alert('خطا در خواندن SHP: '+e.message);
- }
- input.value='';
-}
-
-function addImportedGeoJSON(geo,name){
- const l=L.geoJSON(geo,{
-  style:{color:'#fbbf24',weight:3,fillOpacity:.15},
-  pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:7,color:'#fbbf24',fillOpacity:.8}),
-  onEachFeature:(f,layer)=>{
-   layer.bindPopup(featurePopup(f.properties||{}));
-   layer.on('click',()=>showInfo('ورودی: '+name,f.properties||{}));
+function addImported(geo,name){
+ const group=L.geoJSON(geo,{
+  style:{color:'#fbbf24',weight:3,fillColor:'#fbbf24',fillOpacity:.12},
+  pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:7,color:'#fbbf24',fillColor:'#fbbf24',fillOpacity:.9}),
+  onEachFeature:(f,l)=>{
+   l.bindPopup(popupHTML(f.properties||{}));
+   l.on('click',()=>showImported(f,l,name));
   }
  });
- imported.addLayer(l);
+ imported.addLayer(group);
+ try{map.fitBounds(group.getBounds(),{padding:[25,25]})}catch(e){}
+ setStatus(name+' با موفقیت وارد شد');
+}
+function showImported(f,l,name){
+ lastSelectedLayer=l;lastSelectedFeature=f;
+ let h=`<div class="infoTitle"><b>📂 ${escapeHtml(name)}</b><button onclick="closeInfo()">✕</button></div>`;
+ h+=popupHTML(f.properties||{});
+ h+='<div style="margin-top:8px"><button onclick="openAttributeTable()">▦ جدول مشخصات</button></div>';
+ document.getElementById('infoCard').innerHTML=h;
+ document.getElementById('infoCard').style.display='block';
+ openAttributeTable();
+}
+async function importGeoJSON(input){
+ const f=input.files[0];if(!f)return;
+ try{addImported(JSON.parse(await f.text()),f.name)}catch(e){alert('GeoJSON معتبر نیست.')}
+ input.value='';
+}
+async function importKML(input){
+ const f=input.files[0];if(!f)return;
  try{
-  map.fitBounds(l.getBounds(),{padding:[30,30]});
- }catch(e){}
- updateImportedCount();
+  const xml=new DOMParser().parseFromString(await f.text(),'text/xml');
+  addImported(toGeoJSON.kml(xml),f.name);
+ }catch(e){alert('KML معتبر نیست.')}
+ input.value='';
 }
-
-function updateImportedCount(){
- let n=imported.getLayers().reduce((a,l)=>a+(l.getLayers?l.getLayers().length:1),0);
- document.getElementById('featureCount').innerText+=' | عوارض واردشده: '+n;
+async function importSHP(input){
+ const f=input.files[0];if(!f)return;
+ try{
+  let geo;
+  if(f.name.toLowerCase().endsWith('.zip'))geo=await shp(await f.arrayBuffer());
+  else geo=await shp(await f.arrayBuffer());
+  addImported(geo,f.name);
+ }catch(e){alert('برای ورود SHP بهتر است فایل ZIP شامل اجزای SHP انتخاب شود.')}
+ input.value='';
 }
-
 function clearImported(){
  imported.clearLayers();
+ setStatus('داده‌های واردشده پاک شدند');
 }
-
-function searchFeatures(){
- const q=document.getElementById('searchText').value.trim().toLowerCase();
+function geoJSONFromGroup(){
+ const all=[];
+ imported.eachLayer(g=>{
+  if(g.toGeoJSON) {
+   const gj=g.toGeoJSON();
+   if(gj.features)all.push(...gj.features);
+  }
+ });
+ return {type:'FeatureCollection',features:all};
+}
+function exportImported(){
+ const geo=geoJSONFromGroup();
+ if(!geo.features.length){alert('داده‌ای برای خروجی وجود ندارد.');return}
+ downloadJSON(geo,'webgis-imported.geojson');
+}
+function exportCurrentTable(){
+ if(!lastSelectedFeature)return;
+ downloadJSON({type:'FeatureCollection',features:[lastSelectedFeature]},'selected-feature.geojson');
+}
+function downloadJSON(obj,name){
+ const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/geo+json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();
+ URL.revokeObjectURL(a.href);
+}
+function searchAll(){
+ const q=document.getElementById('searchInput').value.trim().toLowerCase();
+ const box=document.getElementById('searchResults');
+ box.innerHTML='';
  if(!q)return;
- let found=null;
- Object.values(layers).forEach(group=>{
-  if(found||!group)return;
-  group.eachLayer(l=>{
-   if(found||!l.feature)return;
+ let hits=[];
+ Object.entries(layerGroups).forEach(([type,g])=>{
+  if(!g)return;
+  g.eachLayer(l=>{
+   if(!l.feature)return;
    const p=l.feature.properties||{};
-   const txt=JSON.stringify(p).toLowerCase();
-   if(txt.includes(q))found=l;
+   if(JSON.stringify(p).toLowerCase().includes(q))hits.push({type,l,f:l.feature});
   });
  });
- if(found){
-  if(found.getBounds)map.fitBounds(found.getBounds(),{maxZoom:16});
-  else if(found.getLatLng)map.setView(found.getLatLng(),16);
-  found.openPopup();
- }else alert('عارضه‌ای با این عبارت پیدا نشد.');
+ if(!hits.length){box.innerHTML='<div class="small">موردی پیدا نشد.</div>';return}
+ hits.slice(0,30).forEach(x=>{
+  const div=document.createElement('div');
+  div.className='result';
+  div.innerText=(config[x.type]?.name||x.type)+' — '+Object.values(x.f.properties||{}).slice(0,2).join(' | ');
+  div.onclick=()=>{
+   if(x.l.getBounds)map.fitBounds(x.l.getBounds(),{maxZoom:15});
+   else if(x.l.getLatLng)map.setView(x.l.getLatLng(),15);
+   x.l.openPopup();showFeature(x.type,x.f,x.l);
+  };
+  box.appendChild(div);
+ });
 }
+function zoomFull(){
+ const groups=Object.values(layerGroups).filter(Boolean);
+ if(!groups.length){map.setView([29.6,52.5],7);return}
+ let b=null;
+ groups.forEach(g=>{try{b=b?b.extend(g.getBounds()):g.getBounds()}catch(e){}});
+ if(b&&b.isValid())map.fitBounds(b,{padding:[30,30]});
+}
+function printMap(){
+ window.print();
+}
+
+setTimeout(()=>setStatus('WebGIS آماده است — فایل‌های موجود در data به‌صورت خودکار بارگذاری می‌شوند.'),1800);
 </script>
 </body>
 </html>
